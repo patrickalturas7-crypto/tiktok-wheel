@@ -195,6 +195,14 @@
                     </div>
                 </label>
 
+                <label>
+                    Spin Duration:
+                    <div class="spin-inputs">
+                        <input type="number" id="spinDurMins" value="1" min="0"> m
+                        <input type="number" id="spinDurSecs" value="0" min="0" max="59"> s
+                    </div>
+                </label>
+
                 <button class="master-btn btn-start" id="masterStartBtn">▶ START ROLETA</button>
                 <button class="master-btn btn-stop" id="masterStopBtn" style="display:none;">⏹ STOP ROLETA</button>
                 
@@ -434,6 +442,12 @@
             isSpinning = true;
             hideWinnerOverlay();
             
+            // Custom spin duration (min 1 second)
+            const dMins = parseInt(document.getElementById('spinDurMins').value) || 0;
+            const dSecs = parseInt(document.getElementById('spinDurSecs').value) || 0;
+            const durSec = Math.max(1, dMins * 60 + dSecs);
+            spinDuration = durSec * 1000;
+
             const startAngle = idleAngle;
             const winnerIndex = Math.floor(Math.random() * names.length);
             const angleStep = (Math.PI * 2) / names.length;
@@ -442,7 +456,7 @@
             let neededRotation = -Math.PI / 2 - sliceCenter;
             while (neededRotation < startAngle) neededRotation += 2 * Math.PI;
             
-            const extraSpins = 80 + Math.floor(Math.random() * 40);
+            const extraSpins = Math.max(3, Math.round(durSec * 1.33)) + Math.floor(Math.random() * Math.max(2, Math.round(durSec * 0.67)));
             const targetAngle = neededRotation + extraSpins * 2 * Math.PI;
             
             const spinStartTime = performance.now();
