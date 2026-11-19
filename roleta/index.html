@@ -501,7 +501,7 @@
                 spinCooldownSpan.textContent = "--";
             }
 
-            // NEW: Continuous slow spinning when idle (not spinning and no winner showing)
+            // Continuous slow spinning when idle (not spinning and no winner showing)
             if (!isSpinning && !winnerOverlay.classList.contains('show') && names.length > 0) {
                 idleAngle = (idleAngle + idleSpinSpeed) % (2 * Math.PI);
                 lastRenderedAngle = idleAngle;
@@ -587,7 +587,7 @@
                 if (data.action === 'add_name') addName(data.name);
                 if (data.action === 'add_winner') keepWinner(data.name);
                 
-                // NEW: Handle the !notify command
+                // Handle the !notify command
                 if (data.action === 'show_notification') showNotification(data.name);
             };
             ws.onclose = () => {
