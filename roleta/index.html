@@ -10,8 +10,9 @@
         
         .app { 
             max-width: 1100px; width: 100%; 
-            background: rgba(15, 15, 18, 0.85); /* Slight transparency to see bg image */
-            background-size: cover;
+            background-color: rgba(15, 15, 18, 0.85); /* Slight transparency to see bg image */
+            background-size: contain;
+            background-repeat: no-repeat;
             background-position: center;
             backdrop-filter: blur(10px); 
             border-radius: 28px; padding: 16px 18px; 
@@ -155,8 +156,8 @@
             <div class="input-row">
                 <input type="text" id="nameInput" placeholder="Enter name..." maxlength="40">
                 
-                <!-- Hidden file input for uploads -->
-                <input type="file" id="bgUpload" accept="image/*,video/*" style="display: none;">
+                <!-- Hidden file input for uploads (images only: CSS backgrounds can't play video) -->
+                <input type="file" id="bgUpload" accept="image/*" style="display: none;">
                 
                 <!-- Moved Theme Button Here -->
                 <button class="icon-btn theme-btn" id="themeBtn" title="Upload Custom Background">🎨</button>
@@ -261,26 +262,25 @@
             if (!file) return;
 
             const fileURL = URL.createObjectURL(file);
-            
-            // Apply as background image
+
+            // Set each property separately (don't use the `background` shorthand,
+            // it resets size/position/repeat)
+            mainApp.style.backgroundColor = 'rgba(15, 15, 18, 0.95)';
             mainApp.style.backgroundImage = `url(${fileURL})`;
-            mainApp.style.backgroundSize = 'cover';
+            mainApp.style.backgroundSize = 'contain';   // whole image visible, nothing cropped
             mainApp.style.backgroundPosition = 'center';
-            
-            // Make the dark overlay slightly more transparent so you can see the image
-            mainApp.style.background = `rgba(15, 15, 18, 0.7)`; 
-            mainApp.style.backgroundImage = `url(${fileURL})`;
-            
+            mainApp.style.backgroundRepeat = 'no-repeat';
+
             themeBtn.textContent = "❌"; // Change to an X to indicate it can be cleared
             themeBtn.title = "Remove Background";
-            
+
             // Add logic to clear the background on next click
             themeBtn.onclick = () => {
                 mainApp.style.backgroundImage = 'none';
-                mainApp.style.background = `rgba(15, 15, 18, 0.95)`;
+                mainApp.style.backgroundColor = 'rgba(15, 15, 18, 0.85)';
                 themeBtn.textContent = "🎨";
                 themeBtn.title = "Upload Custom Background";
-                
+
                 // Reset the click listener back to opening the file dialog
                 themeBtn.onclick = () => bgUpload.click();
                 bgUpload.value = ""; // Clear the file input
