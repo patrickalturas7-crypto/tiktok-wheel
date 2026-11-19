@@ -5,461 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Weapons of War : Awakening</title>
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-        }
-        body {
-            background: #050505;
-            min-height: 100vh;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 8px;
-        }
-        .app {
-            max-width: 1100px;
-            width: 100%;
-            background: rgba(15, 15, 18, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 28px;
-            padding: 16px 18px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.9), inset 0 1px 3px rgba(255, 255, 255, 0.1);
-            border: 2px solid transparent;
-            background-clip: padding-box;
-            position: relative;
-            overflow: hidden;
-        }
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #050505; min-height: 100vh; margin: 0; display: flex; justify-content: center; align-items: center; padding: 8px; }
+        .app { max-width: 1100px; width: 100%; background: rgba(15, 15, 18, 0.95); backdrop-filter: blur(10px); border-radius: 28px; padding: 16px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.9), inset 0 1px 3px rgba(255, 255, 255, 0.1); border: 2px solid transparent; background-clip: padding-box; position: relative; overflow: hidden; }
+        .app::before { content: ""; position: absolute; inset: -2px; z-index: -1; background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff, #ff0000); background-size: 400%; animation: rgbBorder 6s linear infinite; border-radius: 30px; opacity: 0.5; filter: blur(4px); }
+        @keyframes rgbBorder { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
-        .app::before {
-            content: "";
-            position: absolute;
-            inset: -2px;
-            z-index: -1;
-            background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff, #ff0000);
-            background-size: 400%;
-            animation: rgbBorder 6s linear infinite;
-            border-radius: 30px;
-            opacity: 0.5;
-            filter: blur(4px);
-        }
-        @keyframes rgbBorder {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* LOGIN BAR */
-        .login-bar {
-            display: flex;
-            gap: 10px;
-            background: #0a0a0a;
-            padding: 10px 15px;
-            border-radius: 20px;
-            margin-bottom: 15px;
-            border: 1px solid #333;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            z-index: 2;
-        }
-        .login-bar input {
-            background: #111;
-            border: 1px solid #555;
-            border-radius: 10px;
-            padding: 8px 12px;
-            color: #fff;
-            outline: none;
-            width: 220px;
-        }
-        .login-bar button {
-            background: #00ffff;
-            color: #000;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
+        .login-bar { display: flex; gap: 10px; background: #0a0a0a; padding: 10px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid #333; align-items: center; justify-content: center; position: relative; z-index: 2; }
+        .login-bar input { background: #111; border: 1px solid #555; border-radius: 10px; padding: 8px 12px; color: #fff; outline: none; width: 220px; }
+        .login-bar button { background: #00ffff; color: #000; border: none; padding: 8px 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .login-bar button:hover { background: #00cccc; }
-        .login-bar button:disabled {
-            background: #555;
-            cursor: not-allowed;
-            color: #aaa;
-        }
-        .login-bar .status {
-            font-weight: bold;
-            color: #ff4444;
-            min-width: 110px;
-            text-align: right;
-        }
+        .login-bar button:disabled { background: #555; cursor: not-allowed; color: #aaa; }
+        .login-bar .status { font-weight: bold; color: #ff4444; min-width: 110px; text-align: right; }
         .login-bar .status.connected { color: #00ff00; }
         .login-bar .status.connecting { color: #ffcc00; }
 
-        .hero-banner {
-            width: 100%;
-            max-height: 160px;
-            overflow: hidden;
-            border-radius: 20px;
-            margin-bottom: 10px;
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 18px rgba(0, 255, 255, 0.2);
-            position: relative;
-            z-index: 1;
-        }
-        .hero-banner img {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            object-position: center 30%;
-            display: block;
-            filter: brightness(0.85) saturate(1.2);
-        }
-        .hero-banner::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to bottom, rgba(15,15,18,0.0) 40%, rgba(15,15,18,0.85) 100%);
-            pointer-events: none;
-        }
+        .hero-banner { width: 100%; max-height: 160px; overflow: hidden; border-radius: 20px; margin-bottom: 10px; border: 1px solid rgba(0, 255, 255, 0.3); box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 18px rgba(0, 255, 255, 0.2); position: relative; z-index: 1; }
+        .hero-banner img { width: 100%; height: 160px; object-fit: cover; object-position: center 30%; display: block; filter: brightness(0.85) saturate(1.2); }
+        .hero-banner::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(15,15,18,0.0) 40%, rgba(15,15,18,0.85) 100%); pointer-events: none; }
 
-        h1 {
-            text-align: center;
-            font-weight: 800;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            font-size: 1.5rem;
-            margin: 0 0 12px 0;
-            color: #ffffff;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.5);
-            position: relative;
-            z-index: 1;
-        }
-        h1 .accent {
-            color: #00ffff;
-            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
-        }
+        h1 { text-align: center; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; font-size: 1.5rem; margin: 0 0 12px 0; color: #ffffff; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(0, 255, 255, 0.5); position: relative; z-index: 1; }
+        h1 .accent { color: #00ffff; text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff; }
 
-        .main-panel {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            justify-content: center;
-            position: relative;
-            z-index: 1;
-        }
-        .wheel-container {
-            position: relative;
-            flex: 1 1 300px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-width: 240px;
-        }
-        canvas {
-            width: 100%;
-            max-width: 340px;
-            height: auto;
-            aspect-ratio: 1/1;
-            display: block;
-            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.3));
-            border-radius: 50%;
-        }
-        .pointer {
-            position: absolute;
-            top: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 14px solid transparent;
-            border-right: 14px solid transparent;
-            border-top: 30px solid #00ffff;
-            filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 4px 4px black);
-            z-index: 10;
-            pointer-events: none;
-        }
+        .main-panel { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; position: relative; z-index: 1; }
+        .wheel-container { position: relative; flex: 1 1 300px; display: flex; justify-content: center; align-items: center; min-width: 240px; }
+        canvas { width: 100%; max-width: 340px; height: auto; aspect-ratio: 1/1; display: block; filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.3)); border-radius: 50%; }
+        .pointer { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 30px solid #00ffff; filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 4px 4px black); z-index: 10; pointer-events: none; }
 
-        /* ===== WINNER OVERLAY ===== */
-        .winner-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 85%;
-            max-width: 320px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            pointer-events: none;
-            z-index: 20;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            text-align: center;
-        }
+        .winner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none; z-index: 20; opacity: 0; transition: opacity 0.3s ease; text-align: center; }
         .winner-overlay.show { opacity: 1; pointer-events: auto; }
 
-        .overlay-timer {
-            font-size: 1.6rem;
-            font-weight: 900;
-            letter-spacing: 2px;
-            color: #fff;
-            text-shadow: 0 0 12px #ff00ff, 0 0 24px #ff00ff, 0 2px 4px #000;
-            white-space: nowrap;
-            display: none;
-        }
+        .overlay-timer { font-size: 1.6rem; font-weight: 900; letter-spacing: 2px; color: #fff; text-shadow: 0 0 12px #ff00ff, 0 0 24px #ff00ff, 0 2px 4px #000; white-space: nowrap; display: none; }
         .overlay-timer.show { display: block; }
 
-        .overlay-name {
-            font-size: 2.2rem;
-            font-weight: 900;
-            color: #ffffff;
-            text-shadow: 0 0 12px #00ffff, 0 0 26px #00ffff, 0 3px 6px #000;
-            line-height: 1.05;
-            word-break: break-word;
-            animation: namePulse 0.7s infinite alternate;
-            display: none; 
-        }
+        .overlay-name { font-size: 2.2rem; font-weight: 900; color: #ffffff; text-shadow: 0 0 12px #00ffff, 0 0 26px #00ffff, 0 3px 6px #000; line-height: 1.05; word-break: break-word; animation: namePulse 0.7s infinite alternate; display: none; }
         .overlay-name.show { display: block; }
         
-        @keyframes namePulse {
-            from { transform: scale(1); text-shadow: 0 0 12px #00ffff, 0 0 26px #00ffff, 0 3px 6px #000; }
-            to { transform: scale(1.05); text-shadow: 0 0 18px #ffffff, 0 0 36px #00ffff, 0 3px 8px #000; }
-        }
+        @keyframes namePulse { from { transform: scale(1); text-shadow: 0 0 12px #00ffff, 0 0 26px #00ffff, 0 3px 6px #000; } to { transform: scale(1.05); text-shadow: 0 0 18px #ffffff, 0 0 36px #00ffff, 0 3px 8px #000; } }
 
-        /* Winner Action Buttons */
-        .winner-actions {
-            display: none;
-            gap: 10px;
-            margin-top: 10px;
-            pointer-events: auto;
-        }
+        .winner-actions { display: none; gap: 10px; margin-top: 10px; pointer-events: auto; }
         .winner-actions.show { display: flex; }
         
-        .action-btn {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.9rem;
-            cursor: pointer;
-            border: none;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .btn-keep {
-            background: linear-gradient(135deg, #00ff00 0%, #008800 100%);
-            color: #000;
-            box-shadow: 0 4px 0 #005500, 0 0 10px #00ff0088;
-        }
+        .action-btn { padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 0.9rem; cursor: pointer; border: none; transition: 0.2s; display: flex; align-items: center; gap: 5px; }
+        .btn-keep { background: linear-gradient(135deg, #00ff00 0%, #008800 100%); color: #000; box-shadow: 0 4px 0 #005500, 0 0 10px #00ff0088; }
         .btn-keep:hover { filter: brightness(1.2); transform: translateY(-2px); }
-        .btn-reroll {
-            background: linear-gradient(135deg, #ff00ff 0%, #880088 100%);
-            color: #fff;
-            box-shadow: 0 4px 0 #440044, 0 0 10px #ff00ff88;
-        }
+        .btn-reroll { background: linear-gradient(135deg, #ff00ff 0%, #880088 100%); color: #fff; box-shadow: 0 4px 0 #440044, 0 0 10px #ff00ff88; }
         .btn-reroll:hover { filter: brightness(1.2); transform: translateY(-2px); }
 
-        .chat-prompt {
-            display: none;
-            font-size: 0.85rem;
-            color: #aaffaa;
-            background: rgba(0, 255, 0, 0.1);
-            padding: 4px 10px;
-            border-radius: 10px;
-            border: 1px solid #00ff00;
-            margin-top: 5px;
-            animation: promptPulse 1.5s infinite alternate;
-        }
+        .chat-prompt { display: none; font-size: 0.85rem; color: #aaffaa; background: rgba(0, 255, 0, 0.1); padding: 4px 10px; border-radius: 10px; border: 1px solid #00ff00; margin-top: 5px; animation: promptPulse 1.5s infinite alternate; }
         .chat-prompt.show { display: block; }
-        @keyframes promptPulse {
-            from { opacity: 0.7; box-shadow: 0 0 5px #00ff00; }
-            to { opacity: 1; box-shadow: 0 0 15px #00ff00; }
-        }
+        @keyframes promptPulse { from { opacity: 0.7; box-shadow: 0 0 5px #00ff00; } to { opacity: 1; box-shadow: 0 0 15px #00ff00; } }
 
-        #confettiCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 15;
-            border-radius: 50%;
-        }
+        #confettiCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 15; border-radius: 50%; }
 
-        .controls {
-            flex: 1 1 300px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+        .controls { flex: 1 1 300px; display: flex; flex-direction: column; gap: 10px; }
 
-        .input-row {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            flex-wrap: nowrap;
-            position: relative;
-        }
-        .input-row input {
-            flex: 0 1 160px;
-            width: 160px;
-            background: #111;
-            border: 1px solid #333;
-            border-radius: 40px;
-            padding: 10px 14px;
-            color: #fff;
-            outline: none;
-        }
-        .icon-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.15rem;
-            cursor: pointer;
-            border: none;
-        }
+        .input-row { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; position: relative; }
+        .input-row input { flex: 0 1 160px; width: 160px; background: #111; border: 1px solid #333; border-radius: 40px; padding: 10px 14px; color: #fff; outline: none; }
+        .icon-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; cursor: pointer; border: none; }
         .spin-now-btn { background: #00ffff; color: #000; }
 
-        .name-list-box {
-            background: #0a0a0a;
-            border-radius: 18px;
-            padding: 10px 12px;
-            border: 1px solid #222;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-        .name-list-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #ccc;
-            padding-bottom: 5px;
-            border-bottom: 1px dashed #333;
-            margin-bottom: 6px;
-            font-weight: 600;
-        }
-        .count-badge {
-            background: #00ffff;
-            color: #000;
-            padding: 1px 8px;
-            border-radius: 20px;
-        }
+        .name-list-box { background: #0a0a0a; border-radius: 18px; padding: 10px 12px; border: 1px solid #222; max-height: 150px; overflow-y: auto; }
+        .name-list-header { display: flex; justify-content: space-between; align-items: center; color: #ccc; padding-bottom: 5px; border-bottom: 1px dashed #333; margin-bottom: 6px; font-weight: 600; }
+        .count-badge { background: #00ffff; color: #000; padding: 1px 8px; border-radius: 20px; }
         .count-badge.green { background: #00ff00; }
-        .clear-btn {
-            background: transparent;
-            border: 1px solid #555;
-            color: #aaa;
-            border-radius: 20px;
-            padding: 2px 10px;
-            font-size: 0.7rem;
-            cursor: pointer;
-        }
-        .names-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-        .name-tag {
-            background: #1a1a1a;
-            border-radius: 30px;
-            padding: 4px 8px 4px 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.85rem;
-            color: #eee;
-            border: 1px solid #333;
-        }
-        .name-tag .remove-name {
-            background: #333;
-            border: none;
-            color: #aaa;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        .winner-tag {
-            background: rgba(0, 255, 0, 0.1);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            color: #aaffaa;
-            border-radius: 30px;
-            padding: 4px 12px;
-            font-size: 0.85rem;
-            font-weight: bold;
-        }
+        .clear-btn { background: transparent; border: 1px solid #555; color: #aaa; border-radius: 20px; padding: 2px 10px; font-size: 0.7rem; cursor: pointer; }
+        .names-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+        .name-tag { background: #1a1a1a; border-radius: 30px; padding: 4px 8px 4px 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; color: #eee; border: 1px solid #333; }
+        .name-tag .remove-name { background: #333; border: none; color: #aaa; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; }
+        .winner-tag { background: rgba(0, 255, 0, 0.1); border: 1px solid rgba(0, 255, 0, 0.3); color: #aaffaa; border-radius: 30px; padding: 4px 12px; font-size: 0.85rem; font-weight: bold; }
 
-        .control-panel {
-            background: #0a0a0a;
-            border-radius: 16px;
-            padding: 12px;
-            border-left: 4px solid #00ffff;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .control-panel label {
-            color: #ccc;
-            font-size: 0.85rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .control-panel input[type="number"] {
-            width: 60px;
-            background: #111;
-            border: 1px solid #333;
-            color: #fff;
-            padding: 4px;
-            border-radius: 5px;
-        }
-        .master-btn {
-            padding: 10px;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            border: none;
-            margin-top: 5px;
-            transition: 0.2s;
-        }
+        .control-panel { background: #0a0a0a; border-radius: 16px; padding: 12px; border-left: 4px solid #00ffff; display: flex; flex-direction: column; gap: 8px; }
+        .control-panel label { color: #ccc; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+        .control-panel input[type="number"] { width: 60px; background: #111; border: 1px solid #333; color: #fff; padding: 4px; border-radius: 5px; }
+        .master-btn { padding: 10px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; border: none; margin-top: 5px; transition: 0.2s; }
         .btn-start { background: #00ff00; color: #000; }
         .btn-start:hover { background: #00cc00; }
         .btn-stop { background: #ff0000; color: #fff; }
         .btn-stop:hover { background: #cc0000; }
         
-        .timer-display {
-            display: flex;
-            justify-content: space-between;
-            color: #fff;
-            font-weight: bold;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
+        .timer-display { display: flex; justify-content: space-between; color: #fff; font-weight: bold; margin-bottom: 5px; font-size: 0.9rem; }
         
-        /* Cooldown button */
-        .cooldown-btn {
-            background: #ff00ff;
-            color: white;
-            padding: 6px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            border: none;
-            cursor: pointer;
-            margin-top: 5px;
-            display: none;
-        }
+        .cooldown-btn { background: #ff00ff; color: white; padding: 6px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; border: none; cursor: pointer; margin-top: 5px; display: none; }
         .cooldown-btn.show { display: block; }
     </style>
 </head>
@@ -473,7 +100,7 @@
     </div>
 
     <div class="hero-banner">
-        <!-- Changed to relative path so it works on the hosted website -->
+        <!-- IMPORTANT: Make sure this image is uploaded to the 'roleta' folder on GitHub -->
         <img src="605149313_122255028338163473_8020545562988542735_n.jpg" alt="Weapons of War: Awakening">
     </div>
     <h1>Weapons <span class="accent">of</span> War <span class="accent">:</span> Awakening</h1>
@@ -871,7 +498,6 @@
         }
 
         function connectToPython() {
-            // Automatically connects to the live server on Render, or localhost
             const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(`${protocol}${window.location.host}/ws`);
             
@@ -901,6 +527,9 @@
             ws.onclose = () => {
                 tiktokStatus.textContent = `🔴 Bridge Offline`;
                 tiktokStatus.className = "status";
+                // Reset button if bridge disconnects while connecting
+                connectBtn.disabled = false;
+                connectBtn.textContent = "Connect to Live";
                 setTimeout(connectToPython, 3000);
             };
         }
