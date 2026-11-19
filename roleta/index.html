@@ -7,7 +7,12 @@
     <style>
         * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', Roboto, sans-serif; }
         body { background: #050505; min-height: 100vh; margin: 0; display: flex; justify-content: center; align-items: center; padding: 8px; }
-        .app { max-width: 1100px; width: 100%; background: rgba(15, 15, 18, 0.95); backdrop-filter: blur(10px); border-radius: 28px; padding: 16px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.9), inset 0 1px 3px rgba(255, 255, 255, 0.1); border: 2px solid transparent; background-clip: padding-box; position: relative; overflow: hidden; }
+        
+        /* We use a CSS variable for the theme color so JS can change it easily */
+        .app { 
+            --theme-color: rgba(15, 15, 18, 0.95);
+            max-width: 1100px; width: 100%; background: var(--theme-color); backdrop-filter: blur(10px); border-radius: 28px; padding: 16px 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.9), inset 0 1px 3px rgba(255, 255, 255, 0.1); border: 2px solid transparent; background-clip: padding-box; position: relative; overflow: hidden; transition: background 0.5s ease;
+        }
         .app::before { content: ""; position: absolute; inset: -2px; z-index: -1; background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff, #ff0000); background-size: 400%; animation: rgbBorder 6s linear infinite; border-radius: 30px; opacity: 0.5; filter: blur(4px); }
         @keyframes rgbBorder { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
         
@@ -67,8 +72,10 @@
 
         .input-row { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; position: relative; }
         .input-row input { flex: 0 1 160px; width: 160px; background: #111; border: 1px solid #333; border-radius: 40px; padding: 10px 14px; color: #fff; outline: none; }
-        .icon-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; cursor: pointer; border: none; }
+        
+        .icon-btn { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; cursor: pointer; border: none; transition: 0.2s; }
         .spin-now-btn { background: #00ffff; color: #000; }
+        .shuffle-btn { background: #ff00ff; color: #fff; }
 
         .name-list-box { background: #0a0a0a; border-radius: 18px; padding: 10px 12px; border: 1px solid #222; max-height: 150px; overflow-y: auto; }
         .name-list-header { display: flex; justify-content: space-between; align-items: center; color: #ccc; padding-bottom: 5px; border-bottom: 1px dashed #333; margin-bottom: 6px; font-weight: 600; }
@@ -80,9 +87,14 @@
         .name-tag .remove-name { background: #333; border: none; color: #aaa; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; }
         .winner-tag { background: rgba(0, 255, 0, 0.1); border: 1px solid rgba(0, 255, 0, 0.3); color: #aaffaa; border-radius: 30px; padding: 4px 12px; font-size: 0.85rem; font-weight: bold; }
 
-        .control-panel { background: #0a0a0a; border-radius: 16px; padding: 12px; border-left: 4px solid #00ffff; display: flex; flex-direction: column; gap: 8px; }
-        .control-panel label { color: #ccc; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; }
-        .control-panel input[type="number"] { width: 60px; background: #111; border: 1px solid #333; color: #fff; padding: 4px; border-radius: 5px; }
+        .control-panel { background: #0a0a0a; border-radius: 16px; padding: 12px; border-left: 4px solid #00ffff; display: flex; flex-direction: column; gap: 8px; position: relative; }
+        
+        /* Theme Button inside the panel */
+        .theme-btn { position: absolute; top: 10px; right: 10px; background: #333; color: #fff; border: none; border-radius: 5px; padding: 5px 10px; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
+        .theme-btn:hover { background: #555; }
+
+        .control-panel label { color: #ccc; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
+        .control-panel input[type="number"] { width: 60px; background: #111; border: 1px solid #333; color: #fff; padding: 4px; border-radius: 5px; text-align: center; }
         .master-btn { padding: 10px; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; border: none; margin-top: 5px; transition: 0.2s; }
         .btn-start { background: #00ff00; color: #000; }
         .btn-start:hover { background: #00cc00; }
@@ -98,7 +110,7 @@
     </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="mainApp">
     
     <div class="login-bar">
         <span class="status" id="tiktokStatus">🔴 Disconnected</span>
@@ -137,6 +149,8 @@
         <div class="controls">
             <div class="input-row">
                 <input type="text" id="nameInput" placeholder="Enter name..." maxlength="40">
+                <!-- Added Shuffle Button -->
+                <button class="icon-btn shuffle-btn" id="shuffleBtn" title="Shuffle Wheel">🔀</button>
                 <button class="icon-btn spin-now-btn" id="spinNowBtn" title="Manual Spin">⚔️</button>
             </div>
 
@@ -157,6 +171,9 @@
             </div>
 
             <div class="control-panel">
+                <!-- Added Theme/Image Button -->
+                <button class="theme-btn" id="themeBtn">🎨 Theme</button>
+
                 <div class="timer-display">
                     <span>⏱️ Next Spin: <span id="nextSpinTimer">--:--</span></span>
                     <span>🎯 Cooldown: <span id="spinCooldown">--</span></span>
@@ -224,6 +241,32 @@
         const tiktokUser = document.getElementById('tiktokUser');
         const connectBtn = document.getElementById('connectBtn');
 
+        // Theme Logic
+        const themes = [
+            "rgba(15, 15, 18, 0.95)", // Default Dark
+            "rgba(20, 30, 80, 0.95)", // Deep Blue
+            "rgba(50, 10, 10, 0.95)", // Dark Red
+            "rgba(10, 40, 20, 0.95)", // Dark Green
+            "rgba(30, 10, 50, 0.95)"  // Purple
+        ];
+        let currentThemeIndex = 0;
+        
+        document.getElementById('themeBtn').onclick = () => {
+            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+            document.getElementById('mainApp').style.setProperty('--theme-color', themes[currentThemeIndex]);
+        };
+
+        // Shuffle Logic
+        document.getElementById('shuffleBtn').onclick = () => {
+            if (isSpinning) return;
+            for (let i = names.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [names[i], names[j]] = [names[j], names[i]];
+            }
+            updateUI();
+            drawWheel(lastRenderedAngle);
+        };
+
         let audioCtx = null;
         function ensureAudio() {
             if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
@@ -259,7 +302,6 @@
             nameInput.addEventListener('keydown', e => { if(e.key === 'Enter') addName(); });
             document.getElementById('spinNowBtn').onclick = () => { if(!isSpinning && names.length > 0) performSpin(); };
             
-            // Updated Clear All to tell the backend to clear the user tracking
             document.getElementById('clearAllBtn').onclick = () => { 
                 names = []; 
                 updateUI(); 
@@ -400,7 +442,6 @@
                     stopCooldownBtn.classList.add('show'); 
                     
                     if (isRoletaRunning) {
-                        // Fetch the current interval values when setting next timestamp
                         const mins = parseInt(document.getElementById('spinIntervalMins').value) || 0;
                         const secs = parseInt(document.getElementById('spinIntervalSecs').value) || 0;
                         const totalMs = (mins * 60 * 1000) + (secs * 1000);
@@ -458,7 +499,6 @@
             
             if (isRoletaRunning && nextSpinTimestamp > now) {
                 const diff = nextSpinTimestamp - now;
-                // Updated to show Minutes:Seconds
                 const mins = Math.floor(diff / 60000);
                 const secs = Math.floor((diff % 60000) / 1000);
                 nextSpinTimerSpan.textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
