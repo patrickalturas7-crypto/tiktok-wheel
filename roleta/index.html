@@ -33,39 +33,10 @@
         .pointer { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 30px solid #00ffff; filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 4px 4px black); z-index: 10; pointer-events: none; }
 
         /* NEW: Notification Overlay */
-        .notification-overlay {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.85);
-            border: 2px solid #ff00ff;
-            box-shadow: 0 0 20px #ff00ff, inset 0 0 20px #ff00ff;
-            padding: 15px 30px;
-            border-radius: 15px;
-            text-align: center;
-            z-index: 30;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        .notification-overlay.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-        .notification-label {
-            font-size: 0.8rem;
-            color: #00ffff;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-        }
-        .notification-name {
-            font-size: 1.8rem;
-            font-weight: 900;
-            color: #fff;
-            text-shadow: 0 0 10px #fff;
-            word-break: break-word;
-        }
+        .notification-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.85); border: 2px solid #ff00ff; box-shadow: 0 0 20px #ff00ff, inset 0 0 20px #ff00ff; padding: 15px 30px; border-radius: 15px; text-align: center; z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; }
+        .notification-overlay.show { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        .notification-label { font-size: 0.8rem; color: #00ffff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        .notification-name { font-size: 1.8rem; font-weight: 900; color: #fff; text-shadow: 0 0 10px #fff; word-break: break-word; }
 
         .winner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none; z-index: 20; opacity: 0; transition: opacity 0.3s ease; text-align: center; }
         .winner-overlay.show { opacity: 1; pointer-events: auto; }
@@ -145,7 +116,6 @@
             <canvas id="confettiCanvas" width="600" height="600"></canvas>
             <div class="pointer"></div>
             
-            <!-- NEW: Notification Overlay -->
             <div class="notification-overlay" id="notifyOverlay">
                 <div class="notification-label">User Notified</div>
                 <div class="notification-name" id="notifyName">—</div>
@@ -213,30 +183,22 @@
         
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
-        const confettiCanvas = document.getElementById('confettiCanvas');
-        const confettiCtx = confettiCanvas.getContext('2d');
-        
         const namesGrid = document.getElementById('namesGrid');
         const winnersGrid = document.getElementById('winnersGrid');
         const nameInput = document.getElementById('nameInput');
         const nameCountSpan = document.getElementById('nameCount');
         const winnerCountSpan = document.getElementById('winnerCount');
-        
         const nextSpinTimerSpan = document.getElementById('nextSpinTimer');
         const spinCooldownSpan = document.getElementById('spinCooldown');
-        
         const overlayName = document.getElementById('overlayName');
         const overlayTimer = document.getElementById('overlayTimer');
         const winnerOverlay = document.getElementById('winnerOverlay');
-        
         const winnerActions = document.getElementById('winnerActions');
         const chatPrompt = document.getElementById('chatPrompt');
         const rerollBtn = document.getElementById('rerollBtn');
         const keepBtn = document.getElementById('keepBtn');
-        
         const stopCooldownBtn = document.getElementById('stopCooldownBtn');
 
-        // NEW: Notification elements
         const notifyOverlay = document.getElementById('notifyOverlay');
         const notifyName = document.getElementById('notifyName');
         let notifyTimeout = null;
@@ -249,8 +211,6 @@
         let cooldownEndTimestamp = null;
         let currentWinner = null;
         let spinDuration = 60000;
-        
-        // NEW: Control continuous idle spinning speed
         let idleSpinSpeed = 0.005; 
         
         let ws;
@@ -277,15 +237,10 @@
             });
         }
 
-        // NEW: Function to show the !notify message in the middle
         function showNotification(name) {
             notifyName.textContent = name;
             notifyOverlay.classList.add('show');
-            
-            // Clear any existing timeout so rapid notifications extend the time
             if (notifyTimeout) clearTimeout(notifyTimeout);
-            
-            // Hide it after 5 seconds
             notifyTimeout = setTimeout(() => {
                 notifyOverlay.classList.remove('show');
             }, 5000);
@@ -300,13 +255,8 @@
             document.getElementById('clearAllBtn').onclick = () => { names = []; updateUI(); drawWheel(0); };
             document.getElementById('clearWinnersBtn').onclick = () => { winners = []; updateUI(); };
             
-            rerollBtn.onclick = () => {
-                hideWinnerOverlay();
-                performSpin();
-            };
-            keepBtn.onclick = () => {
-                keepWinner(currentWinner);
-            };
+            rerollBtn.onclick = () => { hideWinnerOverlay(); performSpin(); };
+            keepBtn.onclick = () => { keepWinner(currentWinner); };
             
             stopCooldownBtn.onclick = () => {
                 cooldownEndTimestamp = null; 
@@ -335,11 +285,10 @@
             connectBtn.onclick = () => {
                 const user = tiktokUser.value.trim().replace("@", "");
                 if (!user) return alert("Enter a TikTok username first!");
-                if (!ws || ws.readyState !== WebSocket.OPEN) return alert("Bridge offline! Make sure you ran the Python script.");
+                if (!ws || ws.readyState !== WebSocket.OPEN) return alert("Bridge offline!");
                 
                 connectBtn.disabled = true;
                 connectBtn.textContent = "Connecting...";
-                
                 tiktokStatus.textContent = `🟡 Connecting...`;
                 tiktokStatus.className = "status connecting";
                 ws.send(JSON.stringify({ action: "connect_tiktok", username: user }));
@@ -501,7 +450,6 @@
                 spinCooldownSpan.textContent = "--";
             }
 
-            // Continuous slow spinning when idle (not spinning and no winner showing)
             if (!isSpinning && !winnerOverlay.classList.contains('show') && names.length > 0) {
                 idleAngle = (idleAngle + idleSpinSpeed) % (2 * Math.PI);
                 lastRenderedAngle = idleAngle;
@@ -584,10 +532,9 @@
                     alert("TikTok Connection Error: " + data.message);
                 }
                 
+                // These listen for updates broadcasted to everyone
                 if (data.action === 'add_name') addName(data.name);
                 if (data.action === 'add_winner') keepWinner(data.name);
-                
-                // Handle the !notify command
                 if (data.action === 'show_notification') showNotification(data.name);
             };
             ws.onclose = () => {
