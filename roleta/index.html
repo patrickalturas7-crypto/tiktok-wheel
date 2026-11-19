@@ -32,7 +32,6 @@
         canvas { width: 100%; max-width: 340px; height: auto; aspect-ratio: 1/1; display: block; filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.3)); border-radius: 50%; }
         .pointer { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 30px solid #00ffff; filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 4px 4px black); z-index: 10; pointer-events: none; }
 
-        /* NEW: Notification Overlay */
         .notification-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.85); border: 2px solid #ff00ff; box-shadow: 0 0 20px #ff00ff, inset 0 0 20px #ff00ff; padding: 15px 30px; border-radius: 15px; text-align: center; z-index: 30; opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; }
         .notification-overlay.show { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
         .notification-label { font-size: 0.8rem; color: #00ffff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
@@ -94,6 +93,8 @@
         
         .cooldown-btn { background: #ff00ff; color: white; padding: 6px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; border: none; cursor: pointer; margin-top: 5px; display: none; }
         .cooldown-btn.show { display: block; }
+        
+        .spin-inputs { display: flex; gap: 5px; align-items: center; }
     </style>
 </head>
 <body>
@@ -161,9 +162,13 @@
                     <span>🎯 Cooldown: <span id="spinCooldown">--</span></span>
                 </div>
                 
+                <!-- UPDATED: Split into Minutes and Seconds -->
                 <label>
-                    Spin Interval (Minutes):
-                    <input type="number" id="spinIntervalInput" value="30" min="1">
+                    Spin Interval:
+                    <div class="spin-inputs">
+                        <input type="number" id="spinIntervalMins" value="30" min="0"> m
+                        <input type="number" id="spinIntervalSecs" value="0" min="0" max="59"> s
+                    </div>
                 </label>
 
                 <button class="master-btn btn-start" id="masterStartBtn">▶ START ROLETA</button>
@@ -180,6 +185,7 @@
         let names = [];
         let winners = [];
         let autoSpinIntervalMins = 30;
+        let autoSpinIntervalSecs = 0;
         
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
@@ -252,7 +258,16 @@
             
             nameInput.addEventListener('keydown', e => { if(e.key === 'Enter') addName(); });
             document.getElementById('spinNowBtn').onclick = () => { if(!isSpinning && names.length > 0) performSpin(); };
-            document.getElementById('clearAllBtn').onclick = () => { names = []; updateUI(); drawWheel(0); };
+            
+            // Updated Clear All to tell the backend to clear the user tracking
+            document.getElementById('clearAllBtn').onclick = () => { 
+                names = []; 
+                updateUI(); 
+                drawWheel(0); 
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ action: "clear_all" }));
+                }
+            };
             document.getElementById('clearWinnersBtn').onclick = () => { winners = []; updateUI(); };
             
             rerollBtn.onclick = () => { hideWinnerOverlay(); performSpin(); };
@@ -269,9 +284,13 @@
                 isRoletaRunning = true;
                 document.getElementById('masterStartBtn').style.display = 'none';
                 document.getElementById('masterStopBtn').style.display = 'block';
-                const mins = parseInt(document.getElementById('spinIntervalInput').value) || 30;
-                autoSpinIntervalMins = mins;
-                nextSpinTimestamp = Date.now() + (mins * 60 * 1000);
+                
+                // Calculate total milliseconds based on minutes + seconds
+                const mins = parseInt(document.getElementById('spinIntervalMins').value) || 0;
+                const secs = parseInt(document.getElementById('spinIntervalSecs').value) || 0;
+                const totalMs = (mins * 60 * 1000) + (secs * 1000);
+                
+                nextSpinTimestamp = Date.now() + totalMs;
             };
 
             document.getElementById('masterStopBtn').onclick = () => {
@@ -381,7 +400,11 @@
                     stopCooldownBtn.classList.add('show'); 
                     
                     if (isRoletaRunning) {
-                        nextSpinTimestamp = Date.now() + (autoSpinIntervalMins * 60 * 1000);
+                        // Fetch the current interval values when setting next timestamp
+                        const mins = parseInt(document.getElementById('spinIntervalMins').value) || 0;
+                        const secs = parseInt(document.getElementById('spinIntervalSecs').value) || 0;
+                        const totalMs = (mins * 60 * 1000) + (secs * 1000);
+                        nextSpinTimestamp = Date.now() + totalMs;
                     }
                 }
             }
@@ -435,7 +458,10 @@
             
             if (isRoletaRunning && nextSpinTimestamp > now) {
                 const diff = nextSpinTimestamp - now;
-                nextSpinTimerSpan.textContent = `${Math.floor(diff / 60000)}:${Math.floor((diff % 60000) / 1000).toString().padStart(2,'0')}`;
+                // Updated to show Minutes:Seconds
+                const mins = Math.floor(diff / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                nextSpinTimerSpan.textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
             } else if (!isRoletaRunning) {
                 nextSpinTimerSpan.textContent = "PAUSED";
             }
@@ -532,7 +558,6 @@
                     alert("TikTok Connection Error: " + data.message);
                 }
                 
-                // These listen for updates broadcasted to everyone
                 if (data.action === 'add_name') addName(data.name);
                 if (data.action === 'add_winner') keepWinner(data.name);
                 if (data.action === 'show_notification') showNotification(data.name);
