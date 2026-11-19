@@ -32,11 +32,12 @@ async def connect_tiktok(username: str, websocket: WebSocket):
         if comment.lower().startswith("!notify "):
             name = comment[8:].strip()
             if name:
-                # Send the notification action ONLY. 
-                # We removed the "add_name" action from here.
                 for client in connected_clients.copy():
                     try:
+                        # 1. Show the big purple notification
                         await client.send_text(json.dumps({"action": "show_notification", "name": name}))
+                        # 2. Also add the name to the wheel (if not already there)
+                        await client.send_text(json.dumps({"action": "add_name", "name": name}))
                     except: pass
                     
         elif comment.lower().startswith("!present "):
