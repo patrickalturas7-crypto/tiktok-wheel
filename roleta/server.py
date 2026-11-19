@@ -6,31 +6,21 @@ from fastapi.staticfiles import StaticFiles
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import CommentEvent
 
-# 1. Initialize FastAPI (This creates the 'app' variable Render is looking for)
 app = FastAPI()
-
-# 2. Tell FastAPI how to serve static files (like your image)
-# The directory="." means it looks in the current folder (which is 'roleta' on Render)
 app.mount("/static", StaticFiles(directory="."), name="static")
 
-# Store connected browser sessions
 connected_clients = set()
 tiktok_client = None
 
 @app.get("/")
 async def get_index():
-    # Make sure this path matches your Render Root Directory settings.
-    # If Root Directory is 'roleta', use "index.html". 
-    # If Root Directory is blank, use "roleta/index.html".
     return FileResponse("index.html") 
 
 async def connect_tiktok(username: str, websocket: WebSocket):
     global tiktok_client
     if tiktok_client:
-        try: 
-            await tiktok_client.disconnect()
-        except: 
-            pass
+        try: await tiktok_client.disconnect()
+        except: pass
 
     print(f"🔄 Connecting to TikTok: @{username}")
     tiktok_client = TikTokLiveClient(unique_id=f"@{username}")
@@ -39,45 +29,36 @@ async def connect_tiktok(username: str, websocket: WebSocket):
     async def on_comment(event: CommentEvent):
         comment = event.comment.strip()
         
-        # Check for commands
         if comment.lower().startswith("!notify "):
             name = comment[8:].strip()
             if name:
+                # NEW: Send a specific notification action to show in the middle
                 for client in connected_clients.copy():
                     try:
-                        await client.send_text(json.dumps({"action": "add_name", "name": name}))
-                    except: 
-                        pass
+                        await client.send_text(json.dumps({"action": "show_notification", "name": name}))
+                    except: pass
                     
         elif comment.lower().startswith("!present "):
             name = comment[9:].strip()
             if name:
+                # Keep this as adding a winner
                 for client in connected_clients.copy():
                     try:
                         await client.send_text(json.dumps({"action": "add_winner", "name": name}))
-                    except: 
-                        pass
+                    except: pass
 
     await websocket.send_text(json.dumps({"status": "connecting"}))
     
     try:
-        # --- THE FIX ---
-        # Use .start() instead of .connect(). 
-        # .start() is non-blocking and integrates with the existing FastAPI event loop.
-        # We wrap it in a background task so the WebSocket doesn't hang waiting for the stream to end.
-        
         async def run_client():
             try:
-                # We must await start() first to schedule the connection
                 await tiktok_client.start()
                 await websocket.send_text(json.dumps({"status": "connected"}))
                 print("✅ Successfully connected!")
             except Exception as e:
-                # Check if the error is just a timeout or an actual failure
                 await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
                 print(f"❌ Error: {e}")
 
-        # Run the start() method in the background
         asyncio.create_task(run_client())
         
     except Exception as e:
