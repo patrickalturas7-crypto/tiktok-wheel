@@ -9,16 +9,19 @@ from TikTokLive.events import CommentEvent
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="."), name="static")
 
-# Store all connected clients so we can broadcast to everyone
 connected_clients = set()
 tiktok_client = None
+
+# Tracks names currently in the wheel (to prevent duplicate names)
+current_names = []
+# Tracks TikTok usernames who have already submitted (1 entry per account)
+user_notified = {} 
 
 @app.get("/")
 async def get_index():
     return FileResponse("index.html") 
 
 async def broadcast(message: dict):
-    """Helper function to send a message to ALL open browsers"""
     for client in connected_clients.copy():
         try:
             await client.send_text(json.dumps(message))
@@ -26,7 +29,7 @@ async def broadcast(message: dict):
             pass
 
 async def connect_tiktok(username: str, websocket: WebSocket):
-    global tiktok_client
+    global tiktok_client, current_names, user_notified
     if tiktok_client:
         try: await tiktok_client.disconnect()
         except: pass
@@ -37,13 +40,27 @@ async def connect_tiktok(username: str, websocket: WebSocket):
     @tiktok_client.on(CommentEvent)
     async def on_comment(event: CommentEvent):
         comment = event.comment.strip()
+        # Get the TikTok username of the person commenting
+        # TikTokLive provides this in event.user.unique_id
+        tiktok_user = event.user.unique_id.lower() if event.user else "unknown"
         
         if comment.lower().startswith("!notify "):
             name = comment[8:].strip()
-            if name:
-                # Broadcast to EVERYONE watching the page
+            
+            # 1. Check if this TikTok account has already submitted an entry
+            if tiktok_user in user_notified:
+                print(f"⚠️ {tiktok_user} already submitted. Ignored.")
+                return
+
+            # 2. Check if the name is already in the wheel
+            if name and name.lower() not in [n.lower() for n in current_names]:
+                current_names.append(name) # Add to backend tracking
+                user_notified[tiktok_user] = name # Lock this TikTok account
+                
                 await broadcast({"action": "show_notification", "name": name})
                 await broadcast({"action": "add_name", "name": name})
+            elif name:
+                print(f"⚠️ {name} is already in the wheel. Ignored.")
                     
         elif comment.lower().startswith("!present "):
             name = comment[9:].strip()
@@ -66,10 +83,10 @@ async def connect_tiktok(username: str, websocket: WebSocket):
         
     except Exception as e:
         await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
-        print(f"❌ Setup Error: {e}")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    global current_names, user_notified
     await websocket.accept()
     connected_clients.add(websocket)
     try:
@@ -77,15 +94,14 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             msg = json.loads(data)
             
-            # If a new user connects, sync the current state (optional, but good for UX)
             if msg.get("action") == "connect_tiktok":
                 username = msg.get("username")
                 asyncio.create_task(connect_tiktok(username, websocket))
-                
-            # If someone manually clicks "Keep" or "Re-roll" on their screen, 
-            # we can broadcast it so others see it too (optional)
-            elif msg.get("action") == "spin":
-                await broadcast({"action": "spin"})
+            
+            # Clears the data when you click "Clear All"
+            elif msg.get("action") == "clear_all":
+                current_names = []
+                user_notified = {}
                 
     except WebSocketDisconnect:
         connected_clients.remove(websocket)
