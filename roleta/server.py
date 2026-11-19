@@ -2,11 +2,16 @@ import asyncio
 import json
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import CommentEvent
 
 # 1. Initialize FastAPI (This creates the 'app' variable Render is looking for)
 app = FastAPI()
+
+# 2. Tell FastAPI how to serve static files (like your image)
+# The directory="." means it looks in the current folder (which is 'roleta' on Render)
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 # Store connected browser sessions
 connected_clients = set()
