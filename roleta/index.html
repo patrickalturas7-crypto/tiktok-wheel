@@ -32,6 +32,41 @@
         canvas { width: 100%; max-width: 340px; height: auto; aspect-ratio: 1/1; display: block; filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.3)); border-radius: 50%; }
         .pointer { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 30px solid #00ffff; filter: drop-shadow(0 0 8px #00ffff) drop-shadow(0 4px 4px black); z-index: 10; pointer-events: none; }
 
+        /* NEW: Notification Overlay */
+        .notification-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #ff00ff;
+            box-shadow: 0 0 20px #ff00ff, inset 0 0 20px #ff00ff;
+            padding: 15px 30px;
+            border-radius: 15px;
+            text-align: center;
+            z-index: 30;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .notification-overlay.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        .notification-label {
+            font-size: 0.8rem;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        .notification-name {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 10px #fff;
+            word-break: break-word;
+        }
+
         .winner-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none; z-index: 20; opacity: 0; transition: opacity 0.3s ease; text-align: center; }
         .winner-overlay.show { opacity: 1; pointer-events: auto; }
 
@@ -100,8 +135,7 @@
     </div>
 
     <div class="hero-banner">
-        <!-- Added ?v=2 to force the browser to load the new image -->
-           <img src="/static/banner.jpg" alt="Weapons of War: Awakening">
+        <img src="/static/banner.jpg" alt="Weapons of War: Awakening">
     </div>
     <h1>Weapons <span class="accent">of</span> War <span class="accent">:</span> Awakening</h1>
     
@@ -110,6 +144,13 @@
             <canvas id="wheelCanvas" width="600" height="600"></canvas>
             <canvas id="confettiCanvas" width="600" height="600"></canvas>
             <div class="pointer"></div>
+            
+            <!-- NEW: Notification Overlay -->
+            <div class="notification-overlay" id="notifyOverlay">
+                <div class="notification-label">User Notified</div>
+                <div class="notification-name" id="notifyName">—</div>
+            </div>
+
             <div class="winner-overlay" id="winnerOverlay">
                 <div class="overlay-timer" id="overlayTimer">--</div>
                 <div class="overlay-name" id="overlayName">—</div>
@@ -195,6 +236,11 @@
         
         const stopCooldownBtn = document.getElementById('stopCooldownBtn');
 
+        // NEW: Notification elements
+        const notifyOverlay = document.getElementById('notifyOverlay');
+        const notifyName = document.getElementById('notifyName');
+        let notifyTimeout = null;
+
         let isSpinning = false;
         let isRoletaRunning = false;
         let idleAngle = 0;
@@ -203,6 +249,9 @@
         let cooldownEndTimestamp = null;
         let currentWinner = null;
         let spinDuration = 60000;
+        
+        // NEW: Control continuous idle spinning speed
+        let idleSpinSpeed = 0.005; 
         
         let ws;
         const tiktokStatus = document.getElementById('tiktokStatus');
@@ -226,6 +275,20 @@
                 osc.connect(gain); gain.connect(ac.destination);
                 osc.start(t); osc.stop(t + 0.2);
             });
+        }
+
+        // NEW: Function to show the !notify message in the middle
+        function showNotification(name) {
+            notifyName.textContent = name;
+            notifyOverlay.classList.add('show');
+            
+            // Clear any existing timeout so rapid notifications extend the time
+            if (notifyTimeout) clearTimeout(notifyTimeout);
+            
+            // Hide it after 5 seconds
+            notifyTimeout = setTimeout(() => {
+                notifyOverlay.classList.remove('show');
+            }, 5000);
         }
 
         function init() {
@@ -438,8 +501,9 @@
                 spinCooldownSpan.textContent = "--";
             }
 
-            if (!isSpinning && names.length > 0) {
-                idleAngle = (idleAngle + 0.0002) % (2 * Math.PI);
+            // NEW: Continuous slow spinning when idle (not spinning and no winner showing)
+            if (!isSpinning && !winnerOverlay.classList.contains('show') && names.length > 0) {
+                idleAngle = (idleAngle + idleSpinSpeed) % (2 * Math.PI);
                 lastRenderedAngle = idleAngle;
                 drawWheel(idleAngle);
             }
@@ -522,6 +586,9 @@
                 
                 if (data.action === 'add_name') addName(data.name);
                 if (data.action === 'add_winner') keepWinner(data.name);
+                
+                // NEW: Handle the !notify command
+                if (data.action === 'show_notification') showNotification(data.name);
             };
             ws.onclose = () => {
                 tiktokStatus.textContent = `🔴 Bridge Offline`;
