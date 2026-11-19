@@ -12,9 +12,7 @@ app.mount("/static", StaticFiles(directory="."), name="static")
 connected_clients = set()
 tiktok_client = None
 
-# Tracks names currently in the wheel (to prevent duplicate names)
 current_names = []
-# Tracks TikTok usernames who have already submitted (1 entry per account)
 user_notified = {} 
 
 @app.get("/")
@@ -40,27 +38,20 @@ async def connect_tiktok(username: str, websocket: WebSocket):
     @tiktok_client.on(CommentEvent)
     async def on_comment(event: CommentEvent):
         comment = event.comment.strip()
-        # Get the TikTok username of the person commenting
-        # TikTokLive provides this in event.user.unique_id
         tiktok_user = event.user.unique_id.lower() if event.user else "unknown"
         
         if comment.lower().startswith("!notify "):
             name = comment[8:].strip()
             
-            # 1. Check if this TikTok account has already submitted an entry
             if tiktok_user in user_notified:
-                print(f"⚠️ {tiktok_user} already submitted. Ignored.")
                 return
 
-            # 2. Check if the name is already in the wheel
             if name and name.lower() not in [n.lower() for n in current_names]:
-                current_names.append(name) # Add to backend tracking
-                user_notified[tiktok_user] = name # Lock this TikTok account
+                current_names.append(name)
+                user_notified[tiktok_user] = name 
                 
                 await broadcast({"action": "show_notification", "name": name})
                 await broadcast({"action": "add_name", "name": name})
-            elif name:
-                print(f"⚠️ {name} is already in the wheel. Ignored.")
                     
         elif comment.lower().startswith("!present "):
             name = comment[9:].strip()
@@ -74,10 +65,8 @@ async def connect_tiktok(username: str, websocket: WebSocket):
             try:
                 await tiktok_client.start()
                 await broadcast({"status": "connected"})
-                print("✅ Successfully connected!")
             except Exception as e:
                 await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
-                print(f"❌ Error: {e}")
 
         asyncio.create_task(run_client())
         
@@ -97,12 +86,9 @@ async def websocket_endpoint(websocket: WebSocket):
             if msg.get("action") == "connect_tiktok":
                 username = msg.get("username")
                 asyncio.create_task(connect_tiktok(username, websocket))
-            
-            # Clears the data when you click "Clear All"
             elif msg.get("action") == "clear_all":
                 current_names = []
                 user_notified = {}
                 
     except WebSocketDisconnect:
         connected_clients.remove(websocket)
-        print("🔌 Client disconnected")
