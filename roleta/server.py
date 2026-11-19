@@ -32,7 +32,8 @@ async def connect_tiktok(username: str, websocket: WebSocket):
         if comment.lower().startswith("!notify "):
             name = comment[8:].strip()
             if name:
-                # NEW: Send a specific notification action to show in the middle
+                # Send the notification action ONLY. 
+                # We removed the "add_name" action from here.
                 for client in connected_clients.copy():
                     try:
                         await client.send_text(json.dumps({"action": "show_notification", "name": name}))
@@ -41,7 +42,7 @@ async def connect_tiktok(username: str, websocket: WebSocket):
         elif comment.lower().startswith("!present "):
             name = comment[9:].strip()
             if name:
-                # Keep this as adding a winner
+                # This one STILL adds the winner
                 for client in connected_clients.copy():
                     try:
                         await client.send_text(json.dumps({"action": "add_winner", "name": name}))
