@@ -1,21 +1,3 @@
-import asyncio
-import json
-import os
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
-from TikTokLive import TikTokLiveClient
-from TikTokLive.events import CommentEvent
-
-app = FastAPI()
-
-# Store connected browser sessions
-connected_clients = set()
-tiktok_client = None
-
-@app.get("/")
-async def get_index():
-    return FileResponse("roleta/index.html")
-
 async def connect_tiktok(username: str, websocket: WebSocket):
     global tiktok_client
     if tiktok_client:
@@ -47,25 +29,24 @@ async def connect_tiktok(username: str, websocket: WebSocket):
                     except: pass
 
     await websocket.send_text(json.dumps({"status": "connecting"}))
+    
     try:
-        # 15 second timeout for connection
-        await asyncio.wait_for(tiktok_client.connect(), timeout=15.0)
-        await websocket.send_text(json.dumps({"status": "connected"}))
-        print("✅ Successfully connected!")
+        # --- THIS IS THE FIX ---
+        # Use create_task to run the connection in the background.
+        # We use a wrapper function to handle the success/error messages 
+        # without blocking the main FastAPI loop.
+        async def run_client():
+            try:
+                # 15 second timeout
+                await asyncio.wait_for(tiktok_client.connect(), timeout=15.0)
+                await websocket.send_text(json.dumps({"status": "connected"}))
+                print("✅ Successfully connected!")
+            except Exception as e:
+                await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
+                print(f"❌ Error: {e}")
+
+        asyncio.create_task(run_client())
+        
     except Exception as e:
         await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
-        print(f"❌ Error: {e}")
-
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    connected_clients.add(websocket)
-    try:
-        while True:
-            data = await websocket.receive_text()
-            msg = json.loads(data)
-            if msg["action"] == "connect_tiktok":
-                # Run in a background task to avoid blocking
-                asyncio.create_task(connect_tiktok(msg["username"], websocket))
-    except WebSocketDisconnect:
-        connected_clients.remove(websocket)
+        print(f"❌ Setup Error: {e}")
