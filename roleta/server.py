@@ -56,16 +56,23 @@ async def connect_tiktok(username: str, websocket: WebSocket):
     await websocket.send_text(json.dumps({"status": "connecting"}))
     
     try:
-        # This prevents the "Event loop is already running" error
+        # --- THE FIX ---
+        # Use .start() instead of .connect(). 
+        # .start() is non-blocking and integrates with the existing FastAPI event loop.
+        # We wrap it in a background task so the WebSocket doesn't hang waiting for the stream to end.
+        
         async def run_client():
             try:
-                await asyncio.wait_for(tiktok_client.connect(), timeout=15.0)
+                # We must await start() first to schedule the connection
+                await tiktok_client.start()
                 await websocket.send_text(json.dumps({"status": "connected"}))
                 print("✅ Successfully connected!")
             except Exception as e:
+                # Check if the error is just a timeout or an actual failure
                 await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
                 print(f"❌ Error: {e}")
 
+        # Run the start() method in the background
         asyncio.create_task(run_client())
         
     except Exception as e:
