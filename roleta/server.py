@@ -1,8 +1,31 @@
+import asyncio
+import json
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
+from TikTokLive import TikTokLiveClient
+from TikTokLive.events import CommentEvent
+
+# 1. Initialize FastAPI (This creates the 'app' variable Render is looking for)
+app = FastAPI()
+
+# Store connected browser sessions
+connected_clients = set()
+tiktok_client = None
+
+@app.get("/")
+async def get_index():
+    # Make sure this path matches your Render Root Directory settings.
+    # If Root Directory is 'roleta', use "index.html". 
+    # If Root Directory is blank, use "roleta/index.html".
+    return FileResponse("index.html") 
+
 async def connect_tiktok(username: str, websocket: WebSocket):
     global tiktok_client
     if tiktok_client:
-        try: await tiktok_client.disconnect()
-        except: pass
+        try: 
+            await tiktok_client.disconnect()
+        except: 
+            pass
 
     print(f"🔄 Connecting to TikTok: @{username}")
     tiktok_client = TikTokLiveClient(unique_id=f"@{username}")
@@ -18,7 +41,8 @@ async def connect_tiktok(username: str, websocket: WebSocket):
                 for client in connected_clients.copy():
                     try:
                         await client.send_text(json.dumps({"action": "add_name", "name": name}))
-                    except: pass
+                    except: 
+                        pass
                     
         elif comment.lower().startswith("!present "):
             name = comment[9:].strip()
@@ -26,18 +50,15 @@ async def connect_tiktok(username: str, websocket: WebSocket):
                 for client in connected_clients.copy():
                     try:
                         await client.send_text(json.dumps({"action": "add_winner", "name": name}))
-                    except: pass
+                    except: 
+                        pass
 
     await websocket.send_text(json.dumps({"status": "connecting"}))
     
     try:
-        # --- THIS IS THE FIX ---
-        # Use create_task to run the connection in the background.
-        # We use a wrapper function to handle the success/error messages 
-        # without blocking the main FastAPI loop.
+        # This prevents the "Event loop is already running" error
         async def run_client():
             try:
-                # 15 second timeout
                 await asyncio.wait_for(tiktok_client.connect(), timeout=15.0)
                 await websocket.send_text(json.dumps({"status": "connected"}))
                 print("✅ Successfully connected!")
@@ -50,3 +71,18 @@ async def connect_tiktok(username: str, websocket: WebSocket):
     except Exception as e:
         await websocket.send_text(json.dumps({"status": "error", "message": str(e)}))
         print(f"❌ Setup Error: {e}")
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    connected_clients.add(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            msg = json.loads(data)
+            if msg.get("action") == "connect_tiktok":
+                username = msg.get("username")
+                asyncio.create_task(connect_tiktok(username, websocket))
+    except WebSocketDisconnect:
+        connected_clients.remove(websocket)
+        print("🔌 Client disconnected")
