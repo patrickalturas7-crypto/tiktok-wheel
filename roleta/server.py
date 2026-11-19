@@ -14,7 +14,7 @@ tiktok_client = None
 
 @app.get("/")
 async def get_index():
-    return FileResponse("index.html")
+    return FileResponse("roleta/index.html")
 
 async def connect_tiktok(username: str, websocket: WebSocket):
     global tiktok_client
